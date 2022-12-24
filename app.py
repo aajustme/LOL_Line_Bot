@@ -14,21 +14,33 @@ load_dotenv()
 
 
 machine = TocMachine(
-    states=["user", "state1", "state2"],
+    states=["user", "Name", "Position", "Infor"],
     transitions=[
         {
             "trigger": "advance",
             "source": "user",
-            "dest": "state1",
-            "conditions": "is_going_to_state1",
+            "dest": "Name",
+            "conditions": "is_going_to_Name",
         },
         {
             "trigger": "advance",
-            "source": "user",
-            "dest": "state2",
-            "conditions": "is_going_to_state2",
+            "source": "Name",
+            "dest": "Position",
+            "conditions": "is_going_to_Position",
         },
-        {"trigger": "go_back", "source": ["state1", "state2"], "dest": "user"},
+        {
+            "trigger": "advance",
+            "source": "Name",
+            "dest": "Infor",
+            "conditions": "is_going_to_Infor_from_Name",
+        },
+        {
+            "trigger": "advance",
+            "source": "Position",
+            "dest": "Infor",
+            "conditions": "is_going_to_Infor",
+        },
+        {"trigger": "go_back", "source": "Infor", "dest": "user"},
     ],
     initial="user",
     auto_transitions=False,
@@ -113,6 +125,10 @@ def webhook_handler():
 def show_fsm():
     machine.get_graph().draw("fsm.png", prog="dot", format="png")
     return send_file("fsm.png", mimetype="image/png")
+
+@app.route("/show-img", methods=["GET"])
+def show_img():
+    return send_file("./static/ttt.png", mimetype="image/png")
 
 
 if __name__ == "__main__":
