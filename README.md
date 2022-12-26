@@ -1,5 +1,5 @@
 # 英雄聯盟小助手
-![fsm](./img/initial.png)
+![fsm](./img/initial.png =x250)
 ![fsm](./img/menu.png)
 ![fsm](./img/HeroName.png)
 ![fsm](./img/HeroMenu.png)
