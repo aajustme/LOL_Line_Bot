@@ -5,47 +5,166 @@ from flask import Flask, jsonify, request, abort, send_file
 from dotenv import load_dotenv
 from linebot import LineBotApi, WebhookParser
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import MessageEvent, PostbackEvent, TextMessage, TextSendMessage
 
 from fsm import TocMachine
-from utils import send_text_message
+from utils import send_text_message, send_image_message
 
 load_dotenv()
 
 
 machine = TocMachine(
-    states=["user", "Name", "Position", "Infor"],
+    states=["user", "Menu", "Hero", "TierPosition", "TierList", "HeroPosition", "HeroMenu", "Build", "Counter"],
     transitions=[
         {
             "trigger": "advance",
             "source": "user",
-            "dest": "Name",
-            "conditions": "is_going_to_Name",
+            "dest": "Menu",
+            "conditions": "is_going_to_Menu",
         },
         {
             "trigger": "advance",
-            "source": "Name",
-            "dest": "Position",
-            "conditions": "is_going_to_Position",
+            "source": "Menu",
+            "dest": "Hero",
+            "conditions": "is_going_to_Hero",
         },
         {
             "trigger": "advance",
-            "source": "Name",
-            "dest": "Infor",
-            "conditions": "is_going_to_Infor_from_Name",
+            "source": "Menu",
+            "dest": "TierPosition",
+            "conditions": "is_going_to_TierPosition",
         },
         {
             "trigger": "advance",
-            "source": "Position",
-            "dest": "Infor",
-            "conditions": "is_going_to_Infor",
+            "source": "TierPosition",
+            "dest": "TierList",
+            "conditions": "is_going_to_TierList",
         },
-        {"trigger": "go_back", "source": "Infor", "dest": "user"},
+        {
+            "trigger": "advance",
+            "source": "Hero",
+            "dest": "HeroPosition",
+            "conditions": "is_going_to_HeroPosition",
+        },
+        {
+            "trigger": "advance",
+            "source": "HeroPosition",
+            "dest": "HeroMenu",
+            "conditions": "is_going_to_HeroMenu",
+        },
+        {
+            "trigger": "advance",
+            "source": "HeroMenu",
+            "dest": "Build",
+            "conditions": "is_going_to_Build",
+        },
+        {
+            "trigger": "advance",
+            "source": "HeroMenu",
+            "dest": "Counter",
+            "conditions": "is_going_to_Counter",
+        },
+        # back
+        {
+            "trigger": "advance",
+            "source": "Hero",
+            "dest": "Menu",
+            "conditions": "is_going_back",
+        },
+        {
+            "trigger": "advance",
+            "source": "TierPosition",
+            "dest": "Menu",
+            "conditions": "is_going_back",
+        },
+        {
+            "trigger": "advance",
+            "source": "TierList",
+            "dest": "TierPosition",
+            "conditions": "is_going_back",
+        },
+        {
+            "trigger": "advance",
+            "source": "HeroPosition",
+            "dest": "Hero",
+            "conditions": "is_going_back",
+        },
+        {
+            "trigger": "advance",
+            "source": "HeroMenu",
+            "dest": "HeroPosition",
+            "conditions": "is_going_back",
+        },
+        {
+            "trigger": "advance",
+            "source": "Build",
+            "dest": "HeroMenu",
+            "conditions": "is_going_back",
+        },
+        {
+            "trigger": "advance",
+            "source": "Counter",
+            "dest": "HeroMenu",
+            "conditions": "is_going_back",
+        },
+        # menu
+        {
+            "trigger": "advance",
+            "source": "Hero",
+            "dest": "Menu",
+            "conditions": "is_going_to_Menu",
+        },
+        {
+            "trigger": "advance",
+            "source": "TierPosition",
+            "dest": "Menu",
+            "conditions": "is_going_to_Menu",
+        },
+        {
+            "trigger": "advance",
+            "source": "TierList",
+            "dest": "Menu",
+            "conditions": "is_going_to_Menu",
+        },
+        {
+            "trigger": "advance",
+            "source": "HeroPosition",
+            "dest": "Menu",
+            "conditions": "is_going_to_Menu",
+        },
+        {
+            "trigger": "advance",
+            "source": "HeroMenu",
+            "dest": "Menu",
+            "conditions": "is_going_to_Menu",
+        },
+        {
+            "trigger": "advance",
+            "source": "Build",
+            "dest": "Menu",
+            "conditions": "is_going_to_Menu",
+        },
+        {
+            "trigger": "advance",
+            "source": "Counter",
+            "dest": "Menu",
+            "conditions": "is_going_to_Menu",
+        },
     ],
     initial="user",
     auto_transitions=False,
     show_conditions=True,
 )
+
+'''
+        {
+            "trigger": "advance",
+            "source": "HeroPosition",
+            "dest": "Infor",
+            "conditions": "is_going_to_Infor",
+        },
+        {"trigger": "go_back", "source": "Infor", "dest": "user"},
+'''
 
 app = Flask(__name__, static_url_path="")
 
@@ -106,17 +225,23 @@ def webhook_handler():
 
     # if event is MessageEvent and message is TextMessage, then echo text
     for event in events:
+
         if not isinstance(event, MessageEvent):
             continue
         if not isinstance(event.message, TextMessage):
             continue
         if not isinstance(event.message.text, str):
             continue
-        print(f"\nFSM STATE: {machine.state}")
-        print(f"REQUEST BODY: \n{body}")
-        response = machine.advance(event)
-        if response == False:
-            send_text_message(event.reply_token, "Not Entering any State")
+        if event.message.text.lower() == 'show':
+            ngrok_url = 'https://ebc2-2001-b011-e00a-1b7e-e83a-ea2-18ba-9700.jp.ngrok.io'
+            url = ngrok_url + '/show-fsm'
+            send_image_message(event.reply_token, url)
+        else:
+            print(f"\nFSM STATE: {machine.state}")
+            print(f"REQUEST BODY: \n{body}")
+            response = machine.advance(event)
+            if response == False:
+                send_text_message(event.reply_token, "Not Entering any State")
 
     return "OK"
 
@@ -126,10 +251,17 @@ def show_fsm():
     machine.get_graph().draw("fsm.png", prog="dot", format="png")
     return send_file("fsm.png", mimetype="image/png")
 
-@app.route("/show-img", methods=["GET"])
-def show_img():
-    return send_file("./static/ttt.png", mimetype="image/png")
+@app.route("/show-menu-img", methods=["GET"])
+def show_menu_img():
+    return send_file("./static/menu.jpg", mimetype="image/jpg")
 
+@app.route("/show-runes", methods=["GET"])
+def show_runes():
+    return send_file("./static/runes.png", mimetype="image/png")
+
+@app.route("/show-items", methods=["GET"])
+def show_items():
+    return send_file("./static/items.png", mimetype="image/png")
 
 if __name__ == "__main__":
     port = os.environ.get("PORT", 8000)

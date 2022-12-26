@@ -5,19 +5,13 @@ from pypinyin import lazy_pinyin
 import difflib
 import numpy as np
 import urllib.request
-from PIL import Image
-import matplotlib.pyplot as plt
 import cv2
 
 from linebot import LineBotApi, WebhookParser
-from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage, TemplateSendMessage, ButtonsTemplate, CarouselTemplate
 
 
 channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", None)
-
-offset = [[4, 108], [72, 0], [72, 108], [72, 216], [144, 0], [144, 108], [144, 216], [216, 0], [216, 108], [216, 216], [288, 0], [288, 108], [288, 216],
-          [72, 420], [144, 312], [144, 420], [144, 528], [216, 312], [216, 420], [216, 528], [288, 312], [288, 420], [288, 528],
-          [144, 624], [144, 696], [144, 768], [222, 624], [222, 696], [222, 768], [300, 624], [300, 696], [300, 768]]
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
@@ -241,6 +235,46 @@ hero_dict = {
             '枷蘿' : 'zyra',
         }
 
+full_name_dict = {
+    'lee sin' : '李星',
+    'kha\'zix' : '卡利斯',
+    'nunu & willump' : '努努和威朗普',
+    'dr. mundo' : '蒙多醫生',
+    'rek\'sai' : '雷珂煞',
+    'Jarvan IV' : '嘉文四世',
+    'Xin Zhao' : '趙信',
+    'K\'Sante' : '卡桑帝',
+    'Cho\'Gath' : '科加斯',
+    'Tahm Kench' : '貪啃奇',
+    'Wukong' : '悟空',
+    'Vel\'Koz' : '威寇茲',
+    'Twisted Fate' : '逆命',
+    'master yi' : '易大師',
+    'Bel\'Veth' : '貝爾薇斯',
+    'Kai\'Sa' : '凱莎',
+    'Kog\'Maw' : '寇格魔',
+    'Miss Fortune' : '好運姐',
+    'Renata Glasc' : '睿娜妲'
+}
+
+col1_off = {
+    'Resolve' : [[4, 108], [72, 0], [72, 108], [72, 216], [144, 0], [144, 108], [144, 216], [216, 0], [216, 108], [216, 216], [288, 0], [288, 108], [288, 216]],
+    'Inspiration' : [[4, 108], [72, 0], [72, 108], [72, 216], [144, 0], [144, 108], [144, 216], [216, 0], [216, 108], [216, 216], [288, 0], [288, 108], [288, 216]],
+    'Sorcery' : [[4, 108], [72, 0], [72, 108], [72, 216], [144, 0], [144, 108], [144, 216], [216, 0], [216, 108], [216, 216], [288, 0], [288, 108], [288, 216]],
+    'Precision' : [[4, 108], [72, 0], [72, 72], [72, 144], [72, 216], [144, 0], [144, 108], [144, 216], [216, 0], [216, 108], [216, 216], [288, 0], [288, 108], [288, 216]],
+    'Domination' : [[4, 108], [72, 0], [72, 72], [72, 144], [72, 216], [144, 0], [144, 108], [144, 216], [216, 0], [216, 108], [216, 216], [288, 0], [288, 72], [288, 144], [288, 216]]
+}
+
+col2_off = {
+    'Resolve' : [[72, 420], [144, 312], [144, 420], [144, 528], [216, 312], [216, 420], [216, 528], [288, 312], [288, 420], [288, 528]],
+    'Inspiration' : [[72, 420], [144, 312], [144, 420], [144, 528], [216, 312], [216, 420], [216, 528], [288, 312], [288, 420], [288, 528]],
+    'Sorcery' : [[72, 420], [144, 312], [144, 420], [144, 528], [216, 312], [216, 420], [216, 528], [288, 312], [288, 420], [288, 528]],
+    'Precision' : [[72, 420], [144, 312], [144, 420], [144, 528], [216, 312], [216, 420], [216, 528], [288, 312], [288, 420], [288, 528]],
+    'Domination' : [[72, 420], [144, 312], [144, 420], [144, 528], [216, 312], [216, 420], [216, 528], [288, 312], [288, 384], [288, 456], [288, 528]]
+}
+
+col3_off = [[144, 624], [144, 696], [144, 768], [222, 624], [222, 696], [222, 768], [300, 624], [300, 696], [300, 768]]
+
 def send_text_message(reply_token, text):
     line_bot_api = LineBotApi(channel_access_token)
     line_bot_api.reply_message(reply_token, TextSendMessage(text=text))
@@ -250,6 +284,32 @@ def send_image_message(reply_token, url):
     print(url)
     line_bot_api = LineBotApi(channel_access_token)
     line_bot_api.reply_message(reply_token, ImageSendMessage(original_content_url = url, preview_image_url = url))
+    return "OK"
+
+def send_button_message(reply_token, title, text, url, btn):
+    line_bot_api = LineBotApi(channel_access_token)
+    message = TemplateSendMessage(
+        alt_text='button template',
+        template = ButtonsTemplate(
+            title = title,
+            text = text,
+            thumbnail_image_url = url,
+            actions = btn
+        )
+    )
+    line_bot_api.reply_message(reply_token, message)
+
+def send_column_message(reply_token, cols):
+    line_bot_api = LineBotApi(channel_access_token)
+    message = TemplateSendMessage(
+        alt_text='CarouselTemplate',
+        template=CarouselTemplate(columns=cols)
+    )
+    line_bot_api.reply_message(reply_token, message)
+
+def send_message(reply_token, message_list):
+    line_bot_api = LineBotApi(channel_access_token)
+    line_bot_api.reply_message(reply_token, message_list)
     return "OK"
 
 def string_similar(s1, s2):
@@ -277,37 +337,115 @@ def get_position(hero):
     r = requests.get(f"https://www.op.gg/champions/{hero}", headers = headers)
     soup = BeautifulSoup(r.text,"html.parser")
     sel = soup.body.div.find('div', id = 'content-header').div.div.div.div.find_all('a')
-    pos_list = []
-    for i in range(len(sel)):
-        if sel[i]['data-value'] == 'support':
-            pos_list.append('sup')
-        elif sel[i]['data-value'] == 'jungle':
-            pos_list.append('jg')
-        else:
-            pos_list.append(sel[i]['data-value'])
+    pos_list = [sel[i]['data-value'] for i in range(len(sel))]
     return pos_list
 
 def get_runes_img(hero, position):
     r = requests.get(f"https://www.op.gg/champions/{hero}/{position}/runes?region=global&tier=platinum_plus", headers = headers)
     soup = BeautifulSoup(r.text,"html.parser")
+    main_r = soup.tbody.tr.td.div.div.span.text
+    sub_r = soup.tbody.tr.td.div.div.find_next_sibling('div').find_next_sibling('div').span.text
+    main_num = len(col1_off[main_r])
+    sub_num = len(col2_off[sub_r])
+    
     if soup.tbody.tr.div == None:
         return None
     tags = soup.tbody.tr.div.find_all("img")
-    print(len(tags))
+    
     bg = np.zeros((348,864,3), dtype='uint8')
     bg[:,:,:] = 255
     
-    for i in range(32):
+    for i in range(main_num):
         URL = tags[i]['src']
-        urllib.request.urlretrieve(URL, "t.png")
-        img = cv2.imread('t.png', cv2.IMREAD_UNCHANGED)
-        if i < 32-9:
-            #img = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
-            bg = cv2.circle(bg, (offset[i][1]+28+20, offset[i][0]+28), 28, (0, 0, 0), -1)
-        else:
-            #img = cv2.resize(img, (24, 24), interpolation=cv2.INTER_AREA)
-            bg = cv2.circle(bg, (offset[i][1]+24+20, offset[i][0]+24), 24, (0, 0, 0), -1)
-            
-        bg[np.where(img[:,:,3] > 0)[0]+offset[i][0],np.where(img[:,:,3] > 0)[1]+offset[i][1]+20,:] = img[np.where(img[:,:,3] > 0)[0],np.where(img[:,:,3] > 0)[1],0:3]
+        urllib.request.urlretrieve(URL, "./static/t.png")
+        img = cv2.imread('./static/t.png', cv2.IMREAD_UNCHANGED)
+        bg = cv2.circle(bg, (col1_off[main_r][i][1]+28+20, col1_off[main_r][i][0]+28), 28, (0, 0, 0), -1)
+        bg[np.where(img[:,:,3] > 0)[0]+col1_off[main_r][i][0],np.where(img[:,:,3] > 0)[1]+col1_off[main_r][i][1]+20,:] = img[np.where(img[:,:,3] > 0)[0],np.where(img[:,:,3] > 0)[1],0:3]
+    
+    for i in range(sub_num):
+        URL = tags[i+main_num]['src']
+        urllib.request.urlretrieve(URL, "./static/t.png")
+        img = cv2.imread('./static/t.png', cv2.IMREAD_UNCHANGED)
+        bg = cv2.circle(bg, (col2_off[sub_r][i][1]+28+20, col2_off[sub_r][i][0]+28), 28, (0, 0, 0), -1)
+        bg[np.where(img[:,:,3] > 0)[0]+col2_off[sub_r][i][0],np.where(img[:,:,3] > 0)[1]+col2_off[sub_r][i][1]+20,:] = img[np.where(img[:,:,3] > 0)[0],np.where(img[:,:,3] > 0)[1],0:3]
+    
+    for i in range(9):
+        URL = tags[main_num+sub_num+i]['src']
+        urllib.request.urlretrieve(URL, "./static/t.png")
+        img = cv2.imread('./static/t.png', cv2.IMREAD_UNCHANGED)
+        bg = cv2.circle(bg, (col3_off[i][1]+24+20, col3_off[i][0]+24), 24, (0, 0, 0), -1)
+        bg[np.where(img[:,:,3] > 0)[0]+col3_off[i][0],np.where(img[:,:,3] > 0)[1]+col3_off[i][1]+20,:] = img[np.where(img[:,:,3] > 0)[0],np.where(img[:,:,3] > 0)[1],0:3]
+    
+    cv2.imwrite('./static/runes.png',bg)
 
-    cv2.imwrite('./static/ttt.png',bg)
+def get_items_img(hero, position):
+    r = requests.get(f"https://www.op.gg/champions/{hero}/{position}/items?region=global&tier=platinum_plus", headers = headers) #將此頁面的HTML GET下來
+    soup = BeautifulSoup(r.text,"html.parser")
+    tags = soup.tbody.tr.div.div.find_all("img")
+    items_num = len(tags)
+    bg = np.zeros((64,items_num*64+(items_num-1)*48,3), dtype='uint8')
+    bg[:,:,:] = 255
+    #arrow = np.array(Image.open('arrow.png'))
+    arrow = cv2.imread('./static/arrow.png')
+    for i in range(items_num):
+        URL = tags[i]['src']
+        urllib.request.urlretrieve(URL, "./static/t.png")
+        img = cv2.imread('./static/t.png', cv2.IMREAD_UNCHANGED)
+        bg[:,i*112+0:i*112+64,:] = img[:,:,0:3]
+        if i != items_num-1:
+            bg[8:56,i*112+64:i*112+112,:] = arrow[:,:,:]
+    
+    cv2.imwrite('./static/items.png',bg)
+
+def get_skill_order(hero, position):
+    r = requests.get(f"https://www.op.gg/champions/{hero}/{position}/skills?region=global&tier=platinum_plus", headers = headers) #將此頁面的HTML GET下來
+    soup = BeautifulSoup(r.text,"html.parser")
+    skill_tags = soup.aside.section.ul.li.div.find_all('div', class_='skill_command_box')
+    return skill_tags[0].text+' > '+skill_tags[1].text+' > '+skill_tags[2].text
+
+def get_ch_name(name):
+    for key, value in hero_dict.items():
+        if name.lower() == value.lower():
+            return key
+    for key, value in full_name_dict.items():
+        if key.lower() == name.lower():
+            return value
+    return name
+
+def get_counter_list(hero, position):
+    r = requests.get(f"https://www.op.gg/champions/{hero}/{position}/counters?region=global&tier=platinum_plus", headers = headers) #將此頁面的HTML GET下來
+    soup = BeautifulSoup(r.text,"html.parser")
+    table = soup.tbody.find_all('tr')
+    counter_list = []
+    for i in range(len(table)):
+        counter_list.append((table[i].find_all('td')[1].div.div.text, table[i].find_all('td')[2].span.text[:-1]))
+    counter_list = sorted(counter_list, key=lambda tup: tup[1])
+    countered_str = counter_str = ''
+    for i in range(10):
+        countered_str += f'{i+1}. {get_ch_name(counter_list[i][0].lower())}：{counter_list[i][1]}%\n'
+
+    for i in range(10):
+        counter_str += f'{i+1}. {get_ch_name(counter_list[-1-i][0].lower())}：{counter_list[-1-i][1]}%\n'
+
+    return countered_str, counter_str
+
+def get_tier_list(position):
+    r = requests.get(f"https://www.op.gg/champions?region=global&tier=platinum_plus&position={position}", headers = headers) #將此頁面的HTML GET下來
+    soup = BeautifulSoup(r.text,"html.parser")
+    tier_dict = dict()
+    table = soup.tbody.find_all('tr')
+    for i in range(len(table)):
+        if table[i].find_all('td')[2].text not in tier_dict.keys():
+            tier_dict[table[i].find_all('td')[2].text] = []
+        tier_dict[table[i].find_all('td')[2].text].append(table[i].find_all('td')[1].a.strong.text)
+
+    ret_str_list = []
+    for key in sorted(tier_dict.keys()):
+        s = f'Tier {key}:\n'
+        for i in range(len(tier_dict[key])):
+            s += get_ch_name(tier_dict[key][i])
+            if i != len(tier_dict[key])-1:
+                s += ', '
+        ret_str_list.append(s)
+
+    return ret_str_list
