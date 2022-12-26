@@ -36,4 +36,4 @@
 <img src="./img/show.png" alt="drawing" width="400"/>  
   
 ## fsm
-<img src="./img/fsm.png" alt="drawing" width="400"/>
+<img src="./img/fsm.png" alt="drawing" width="800"/>
