@@ -67,6 +67,12 @@ machine = TocMachine(
         # back
         {
             "trigger": "advance",
+            "source": "Menu",
+            "dest": "Menu",
+            "conditions": "is_going_back",
+        },
+        {
+            "trigger": "advance",
             "source": "Hero",
             "dest": "Menu",
             "conditions": "is_going_back",
@@ -108,6 +114,12 @@ machine = TocMachine(
             "conditions": "is_going_back",
         },
         # menu
+        {
+            "trigger": "advance",
+            "source": "Menu",
+            "dest": "Menu",
+            "conditions": "is_going_to_Menu",
+        },
         {
             "trigger": "advance",
             "source": "Hero",
@@ -172,6 +184,7 @@ app = Flask(__name__, static_url_path="")
 # get channel_secret and channel_access_token from your environment variable
 channel_secret = os.getenv("LINE_CHANNEL_SECRET", None)
 channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", None)
+web_url = os.getenv("WEB_URL", None)
 if channel_secret is None:
     print("Specify LINE_CHANNEL_SECRET as environment variable.")
     sys.exit(1)
@@ -233,8 +246,7 @@ def webhook_handler():
         if not isinstance(event.message.text, str):
             continue
         if event.message.text.lower() == 'show':
-            ngrok_url = 'https://ebc2-2001-b011-e00a-1b7e-e83a-ea2-18ba-9700.jp.ngrok.io'
-            url = ngrok_url + '/show-fsm'
+            url = web_url + '/show-fsm'
             send_image_message(event.reply_token, url)
         else:
             print(f"\nFSM STATE: {machine.state}")
